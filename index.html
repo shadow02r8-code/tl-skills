@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Throne and Liberty スキルデータベース（Lv.21 ヒロイックリーク）</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#131a24; --panel2:#0f1620; --border:#1f2a37;
+    --accent:#f5c542; --blue:#5aa9e6; --text:#e6edf3; --muted:#8b98a8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.6}
+  header{padding:24px 20px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#10161f,#0d1117)}
+  header h1{font-size:1.6rem;color:#fff;margin-bottom:4px}
+  header p{color:var(--muted);font-size:.9rem}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  .controls{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);padding:12px 0}
+  #search{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:1rem}
+  #search:focus{outline:none;border-color:var(--blue)}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tab{padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-size:.85rem;white-space:nowrap;transition:.15s}
+  .tab:hover{border-color:var(--blue);color:var(--text)}
+  .tab.active{background:var(--accent);color:#1a1300;border-color:var(--accent);font-weight:700}
+  main{padding:20px 0 60px}
+  .weapon-section{margin-bottom:34px}
+  .weapon-title{font-size:1.4rem;color:var(--accent);border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .weapon-title .count{font-size:.8rem;color:var(--muted);font-weight:400}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:.15s}
+  .card:hover{border-color:var(--blue);transform:translateY(-2px)}
+  .card h3{color:var(--blue);font-size:1.02rem;margin-bottom:3px}
+  .card .en{color:var(--muted);font-size:.72rem;font-style:italic;margin-bottom:7px;letter-spacing:.02em}
+  .card p{font-size:.86rem;color:var(--text);white-space:pre-line}
+  .empty{text-align:center;color:var(--muted);padding:50px 0;font-size:1rem}
+  footer{border-top:1px solid var(--border);padding:18px;text-align:center;color:var(--muted);font-size:.78rem}
+  mark{background:var(--accent);color:#1a1300;border-radius:3px;padding:0 2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>⚔️ Throne and Liberty スキルデータベース</h1>
+    <p>Lv.21 ヒロイックスキル リーク情報（Kninebeat 提供データより日本語化）／ ローカライズファイルの自動解析エクスポート</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap">
+    <input id="search" type="search" placeholder="🔍 スキル名・効果で検索（日本語／英語）…" autocomplete="off">
+    <div class="tabs" id="tabs"></div>
+  </div>
+</div>
+
+<main>
+  <div class="wrap" id="content"></div>
+</main>
+
+<footer>
+  Throne &amp; Liberty Weapon Database Data Export ／ 非公式の有志翻訳・参考用データです。数値・効果はゲーム内表記が優先されます。
+</footer>
+
+<script src="data.js"></script>
+<script>
+const content=document.getElementById('content');
+const tabs=document.getElementById('tabs');
+const search=document.getElementById('search');
+let activeCat='all';
+
+// 検索語をハイライトしてDOMノード配列を返す（innerHTML不使用）
+function hlNodes(text,q){
+  if(!q) return [document.createTextNode(text)];
+  const lower=text.toLowerCase();
+  const ql=q.toLowerCase();
+  const nodes=[];
+  let i=0;
+  while(i<text.length){
+    const idx=lower.indexOf(ql,i);
+    if(idx===-1){ nodes.push(document.createTextNode(text.slice(i))); break; }
+    if(idx>i) nodes.push(document.createTextNode(text.slice(i,idx)));
+    const m=document.createElement('mark');
+    m.textContent=text.slice(idx,idx+ql.length);
+    nodes.push(m);
+    i=idx+ql.length;
+  }
+  return nodes;
+}
+function fill(el,text,q){ hlNodes(text,q).forEach(n=>el.appendChild(n)); }
+
+function render(){
+  const q=search.value.trim();
+  content.textContent='';
+  let total=0;
+  DATA.forEach(cat=>{
+    if(activeCat!=='all' && activeCat!==cat.id) return;
+    const ql=q.toLowerCase();
+    const items=cat.skills.filter(s=>!q || (s.ja+s.en+s.desc).toLowerCase().includes(ql));
+    if(!items.length) return;
+    total+=items.length;
+    const sec=document.createElement('section');
+    sec.className='weapon-section';
+    const h2=document.createElement('h2');
+    h2.className='weapon-title';
+    h2.appendChild(document.createTextNode(`${cat.icon||''} ${cat.name} `));
+    const cnt=document.createElement('span');
+    cnt.className='count';cnt.textContent=`${items.length}件`;
+    h2.appendChild(cnt);
+    sec.appendChild(h2);
+    const grid=document.createElement('div');
+    grid.className='grid';
+    items.forEach(s=>{
+      const card=document.createElement('div');
+      card.className='card';
+      const h3=document.createElement('h3');fill(h3,s.ja,q);
+      const en=document.createElement('div');en.className='en';fill(en,s.en,q);
+      const p=document.createElement('p');fill(p,s.desc,q);
+      card.appendChild(h3);card.appendChild(en);card.appendChild(p);
+      grid.appendChild(card);
+    });
+    sec.appendChild(grid);
+    content.appendChild(sec);
+  });
+  if(!total){
+    const d=document.createElement('div');
+    d.className='empty';d.textContent='該当するスキルが見つかりませんでした。';
+    content.appendChild(d);
+  }
+}
+
+function buildTabs(){
+  const all=document.createElement('div');
+  all.className='tab active';all.textContent='すべて';all.dataset.id='all';
+  tabs.appendChild(all);
+  DATA.forEach(cat=>{
+    const t=document.createElement('div');
+    t.className='tab';t.dataset.id=cat.id;
+    t.textContent=`${cat.icon||''} ${cat.name}`;
+    tabs.appendChild(t);
+  });
+  tabs.addEventListener('click',e=>{
+    const t=e.target.closest('.tab');if(!t)return;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');activeCat=t.dataset.id;
+    render();window.scrollTo({top:0,behavior:'smooth'});
+  });
+}
+search.addEventListener('input',render);
+buildTabs();
+render();
+</script>
+</body>
+</html>
